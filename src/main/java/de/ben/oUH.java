@@ -1,7 +1,6 @@
 package de.ben;
 
 import org.bukkit.plugin.java.JavaPlugin;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -28,37 +27,27 @@ public class oUH extends JavaPlugin {
 
     private void connectDatabase() {
         try {
-            // Verbindung zur Datenbank herstellen
             connection = DriverManager.getConnection(
-                    "jdbc:mysql://192.168.178.63:3306/blocklogs", "monty", "!7JTQHm?i4Rr?7bq");
+                    "jdbc:mysql://192.168.178.63:3306/blocklogs", "DEINUSER", "DEINPASSWORT");
 
-            // Tabelle erstellen, falls sie noch nicht existiert
             Statement stmt = connection.createStatement();
-            stmt.executeUpdate("""
-            CREATE TABLE IF NOT EXISTS block_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                user VARCHAR(100) NOT NULL,
-                x INT NOT NULL,
-                y INT NOT NULL,
-                z INT NOT NULL,
-                action VARCHAR(10) NOT NULL
-            );
-        """);
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS block_logs (" +
+                    "id INT AUTO_INCREMENT PRIMARY KEY," +
+                    "time TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                    "user VARCHAR(100) NOT NULL," +
+                    "x INT NOT NULL," +
+                    "y INT NOT NULL," +
+                    "z INT NOT NULL," +
+                    "action VARCHAR(10) NOT NULL," +
+                    "block_type VARCHAR(50) NOT NULL)");
 
-            getLogger().info("MySQL-Verbindung erfolgreich und Tabelle geprüft.");
+            getLogger().info("MySQL-Verbindung erfolgreich.");
         } catch (Exception e) {
-            getLogger().severe("Fehler bei der MySQL-Verbindung oder beim Tabellenerstellen:");
+            getLogger().severe("Fehler bei der MySQL-Verbindung:");
             e.printStackTrace();
         }
     }
 
-
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public HashSet<UUID> getInspectMode() {
-        return inspectMode;
-    }
+    public Connection getConnection() { return connection; }
+    public HashSet<UUID> getInspectMode() { return inspectMode; }
 }
