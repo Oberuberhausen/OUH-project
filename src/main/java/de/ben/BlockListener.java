@@ -8,6 +8,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.Action;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,6 +33,9 @@ public class BlockListener implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
+        // Nur MAIN_HAND (rechte Hand), damit kein Doppellog bei OFF_HAND
+        if (e.getHand() == null || !e.getHand().name().equals("MAIN_HAND")) return;
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (!plugin.getInspectMode().contains(e.getPlayer().getUniqueId())) return;
         if (!e.hasBlock()) return;
 
@@ -43,10 +47,12 @@ public class BlockListener implements Listener {
             ps.setInt(3, block.getZ());
             ResultSet rs = ps.executeQuery();
 
-            e.getPlayer().sendMessage(ChatColor.YELLOW + "History für Block bei " +
+            e.getPlayer().sendMessage(ChatColor.YELLOW + "§lHistory für Block bei §7" +
                     block.getX() + " " + block.getY() + " " + block.getZ() + ":");
 
+            boolean found = false;
             while (rs.next()) {
+                found = true;
                 String user = rs.getString("user");
                 String action = rs.getString("action");
                 String type = rs.getString("block_type");
@@ -55,7 +61,11 @@ public class BlockListener implements Listener {
                         .plusHours(2)  // Zeit fixen (UTC+2)
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-                e.getPlayer().sendMessage("§7" + time + " - §a" + user + " §7-> §e" + action + " §8(" + type + ")");
+                e.getPlayer().sendMessage("§8➤ §7" + time + " - §a" + user + " §7→ §e" + action + " §8(" + type + ")");
+            }
+
+            if (!found) {
+                e.getPlayer().sendMessage("§cKeine Logs für diesen Block gefunden.");
             }
         } catch (Exception ex) {
             e.getPlayer().sendMessage("§cFehler beim Abrufen der Daten.");
@@ -75,7 +85,7 @@ public class BlockListener implements Listener {
                 check.setString(6, block.getType().name());
                 ResultSet rs = check.executeQuery();
                 rs.next();
-                if (rs.getInt(1) > 0) return; // Duplikat -> nicht loggen
+                if (rs.getInt(1) > 0) return; // Duplikat → nicht erneut loggen
             } catch (Exception ignored) {}
 
             try (PreparedStatement ps = plugin.getConnection().prepareStatement(
