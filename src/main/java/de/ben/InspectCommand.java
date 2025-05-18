@@ -21,8 +21,9 @@ public class InspectCommand implements CommandExecutor {
             p.sendMessage("§cInspect-Modus deaktiviert.");
         } else {
             plugin.getInspectMode().add(p.getUniqueId());
-            p.sendMessage("§aInspect-Modus aktiviert. Rechtsklick auf Block zeigt Historie.");
+            p.sendMessage("§aInspect-Modus aktiviert. Rechts-/Linksklick zeigt Historie.");
         }
+
         return true;
     }
 }
