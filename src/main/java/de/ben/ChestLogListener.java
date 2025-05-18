@@ -61,18 +61,42 @@ public class ChestLogListener implements Listener {
 
         Player player = e.getPlayer();
 
+        // Erste Hälfte (angeklickt)
+        int x1 = block.getX();
+        int y1 = block.getY();
+        int z1 = block.getZ();
+        String world = block.getWorld().getName();
+
+        // Zweite Hälfte (Doppelkiste?)
+        Block adjacent = null;
+        for (Block face : new Block[]{
+                block.getRelative(1, 0, 0),
+                block.getRelative(-1, 0, 0),
+                block.getRelative(0, 0, 1),
+                block.getRelative(0, 0, -1)
+        }) {
+            if (face.getType() == block.getType()) {
+                adjacent = face;
+                break;
+            }
+        }
+
+        int x2 = adjacent != null ? adjacent.getX() : x1;
+        int y2 = adjacent != null ? adjacent.getY() : y1;
+        int z2 = adjacent != null ? adjacent.getZ() : z1;
+
+        // Abfrage aus Datenbank
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (PreparedStatement ps = plugin.getConnection().prepareStatement(
-                    "SELECT * FROM chest_logs WHERE x=? AND y=? AND z=? AND world=? ORDER BY time DESC")) {
-                ps.setInt(1, block.getX());
-                ps.setInt(2, block.getY());
-                ps.setInt(3, block.getZ());
-                ps.setString(4, block.getWorld().getName());
+                    "SELECT * FROM chest_logs WHERE world=? AND " +
+                            "((x=? AND y=? AND z=?) OR (x=? AND y=? AND z=?)) ORDER BY time DESC")) {
+                ps.setString(1, world);
+                ps.setInt(2, x1); ps.setInt(3, y1); ps.setInt(4, z1);
+                ps.setInt(5, x2); ps.setInt(6, y2); ps.setInt(7, z2);
 
                 ResultSet rs = ps.executeQuery();
 
-                player.sendMessage("§e§lChest-Historie §7@ (" +
-                        block.getX() + ", " + block.getY() + ", " + block.getZ() + ")");
+                player.sendMessage("§e§lChest-Historie §7@ (" + x1 + ", " + y1 + ", " + z1 + ")");
 
                 boolean found = false;
                 while (rs.next()) {

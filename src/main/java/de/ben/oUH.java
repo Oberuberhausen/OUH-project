@@ -33,7 +33,7 @@ public class oUH extends JavaPlugin {
     private void connectDatabase() {
         try {
             connection = DriverManager.getConnection(
-                    "jdbc:mysql://192.168.178.63:3306/blocklogs", "DEINUSER", "DEINPASSWORT");
+                    "jdbc:mysql://192.168.178.63:3306/blocklogs", "monty", "!7JTQHm?i4Rr?7bq");
 
             Statement stmt = connection.createStatement();
 
