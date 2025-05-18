@@ -1,0 +1,8 @@
+name: OUH-protect
+version: '1.0-SNAPSHOT'
+main: de.ben.oUH
+api-version: '1.21'
+commands:
+  inspect:
+    description: Aktiviert den Block-Inspect-Modus
+    usage: /inspect
