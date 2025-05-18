@@ -33,13 +33,32 @@ public class BlockListener implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
-        // Nur MAIN_HAND (rechte Hand), damit kein Doppellog bei OFF_HAND
+        // Nur MAIN_HAND zulassen, um doppelte Events zu vermeiden
         if (e.getHand() == null || !e.getHand().name().equals("MAIN_HAND")) return;
-        if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+        // Prüfen, ob der Spieler im Inspect-Modus ist
         if (!plugin.getInspectMode().contains(e.getPlayer().getUniqueId())) return;
-        if (!e.hasBlock()) return;
+
+        // Optional: Rechts- oder Linksklick auf Block erlauben
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK && e.getAction() != Action.LEFT_CLICK_BLOCK) {
+            e.getPlayer().sendMessage("§7[Debug] Kein Klick auf Block erkannt.");
+            return;
+        }
+
+        if (!e.hasBlock()) {
+            e.getPlayer().sendMessage("§7[Debug] Kein Block vorhanden.");
+            return;
+        }
 
         Block block = e.getClickedBlock();
+        if (block == null) {
+            e.getPlayer().sendMessage("§7[Debug] Block ist null.");
+            return;
+        }
+
+        e.getPlayer().sendMessage("§7[Debug] Prüfe Logs für Block bei: " +
+                block.getX() + ", " + block.getY() + ", " + block.getZ());
+
         try (PreparedStatement ps = plugin.getConnection().prepareStatement(
                 "SELECT * FROM block_logs WHERE x=? AND y=? AND z=? ORDER BY time DESC")) {
             ps.setInt(1, block.getX());
@@ -47,18 +66,20 @@ public class BlockListener implements Listener {
             ps.setInt(3, block.getZ());
             ResultSet rs = ps.executeQuery();
 
-            e.getPlayer().sendMessage(ChatColor.YELLOW + "§lHistory für Block bei §7" +
-                    block.getX() + " " + block.getY() + " " + block.getZ() + ":");
-
             boolean found = false;
             while (rs.next()) {
-                found = true;
+                if (!found) {
+                    e.getPlayer().sendMessage(ChatColor.YELLOW + "§lHistory für Block bei §7" +
+                            block.getX() + " " + block.getY() + " " + block.getZ() + ":");
+                    found = true;
+                }
+
                 String user = rs.getString("user");
                 String action = rs.getString("action");
                 String type = rs.getString("block_type");
                 String time = rs.getTimestamp("time")
                         .toLocalDateTime()
-                        .plusHours(2)  // Zeit fixen (UTC+2)
+                        .plusHours(2)  // Zeitkorrektur (UTC+2)
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
                 e.getPlayer().sendMessage("§8➤ §7" + time + " - §a" + user + " §7→ §e" + action + " §8(" + type + ")");
@@ -85,7 +106,7 @@ public class BlockListener implements Listener {
                 check.setString(6, block.getType().name());
                 ResultSet rs = check.executeQuery();
                 rs.next();
-                if (rs.getInt(1) > 0) return; // Duplikat → nicht erneut loggen
+                if (rs.getInt(1) > 0) return; // Duplikat? → nicht loggen
             } catch (Exception ignored) {}
 
             try (PreparedStatement ps = plugin.getConnection().prepareStatement(
